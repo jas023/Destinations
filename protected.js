@@ -1,99 +1,86 @@
+// protect.js - For the main site.html page
+
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  // ✅ Use your project’s URL
-  const supabaseUrl = "https://mcnhihrosvwnujkojtaj.supabase.co";
+// --- 1. Supabase Setup ---
+const supabaseUrl = "https://mcnhihrosvwnujkojtaj.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbmhpaHJvc3Z3bnVqa29qdGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTc3ODYsImV4cCI6MjA3MjQ3Mzc4Nn0.el1rzH6RLLGf03Q5hemrzTzT_F5Ff_pYGQ4a_jydo4c";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // ✅ Use your anon public key (copy from Supabase dashboard under API Keys → anon public)
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbmhpaHJvc3Z3bnVqa29qdGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTc3ODYsImV4cCI6MjA3MjQ3Mzc4Nn0.el1rzH6RLLGf03Q5hemrzTzT_F5Ff_pYGQ4a_jydo4c";
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+// --- 2. DATABASE: Fetch and display destinations ---
+async function fetchDestinations() {
+  const destinationsList = document.getElementById('destinations-list');
+  
+  // Fetch data from the 'destinations' table
+  const { data, error } = await supabase
+    .from('destinations')
+    .select('*');
 
-  /* insert rows */
-const { data, error } = await supabase
-  .from('destinations')
-  .insert([
-    { some_column: 'someValue' },
-    { some_column: 'otherValue' },
-  ])
-  .select()
-          
-
-  // Example: fetch data
-  async function loadDestinations() {
-    let { data, error } = await supabase.from("destinations").select("*");
-
-    if (error) {
-      console.error(error);
-    } else {
-      console.log(data);
-    }
+  if (error) {
+    console.error('Error fetching destinations:', error);
+    destinationsList.innerHTML = '<li>Error loading destinations.</li>';
+    return;
   }
 
+  // Clear the list before adding new items
+  destinationsList.innerHTML = '';
 
-  // signup
-  const signupForm = document.getElementById("signupForm");
-if (signupForm) {
-  signupForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("signupEmail").value;
-    const password = document.getElementById("signupPassword").value;
-
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      alert("Signup failed: " + error.message);
-    } else {
-      alert("Signup successful! Please login now.");
-      window.location.href = "login.html"; // or "site.html"
-    }
-  });
-}
-
-    
-
-
-
-
-
-/*signin */
-const loginForm = document.getElementById("loginForm");
-if (loginForm) {
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("loginemail").value;
-    const password = document.getElementById("loginpassword").value;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      alert("Login failed: " + error.message);
-    } else {
-      alert("Login successful!");
-      window.location.href = "index.html";
-    }
-  });
+  if (data.length === 0) {
+    destinationsList.innerHTML = '<li>No destinations yet. Add one above!</li>';
+  } else {
+    // Create and append a list item for each destination
+    data.forEach(destination => {
+      const li = document.createElement('li');
+      li.textContent = `${destination.name} in ${destination.location} - Price: $${destination.price}`;
+      destinationsList.appendChild(li);
+    });
+  }
 }
 
 
+// --- 3. DATABASE: Handle new destination form ---
+const destinationForm = document.getElementById('destination-form');
+destinationForm.addEventListener('submit', async (event) => {
+  event.preventDefault(); // Prevent the form from reloading the page
 
-/*get current user or to check user is logged in or not */
-const { data: { user } } = await supabase.auth.getUser();
-if (!user) {
+  const name = document.getElementById('name').value;
+  const location = document.getElementById('location').value;
+  const price = document.getElementById('price').value;
+
+  // Insert the new row into the 'destinations' table
+  const { data, error } = await supabase
+    .from('destinations')
+    .insert([{ name, location, price }]);
+
+  if (error) {
+    console.error('Error adding destination:', error);
+    alert('Failed to add destination: ' + error.message);
+  } else {
+    // If successful, clear the form and refresh the list of destinations
+    destinationForm.reset();
+    fetchDestinations(); 
+  }
+});
+
+
+// --- 4. AUTH: Page Protection and Content Visibility ---
+async function checkUserAndLoadData() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     window.location.href = "login.html";
+  } else {
+    // If user is logged in, show the page and load the data
+    document.body.classList.remove('content-hidden');
+    fetchDestinations(); // <-- FETCH DATA AFTER USER IS VERIFIED
+  }
 }
 
-async function checkUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (!user) {
-    window.location.href = "login.html";
-  }
-}
-checkUser();
+// Run the auth check when the page loads
+checkUserAndLoadData();
 
 
-// ✅ Logout
+// --- 5. AUTH: Logout Button Logic ---
 const logoutBtn = document.getElementById("logout");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
@@ -101,11 +88,3 @@ if (logoutBtn) {
     window.location.href = "login.html";
   });
 }
-
-
-/* google linking */
-/* createClientconst { data, error } = await supabase.auth.linkIdentity({ provider: 'google' }) */
-
-  loadDestinations();
-
-  

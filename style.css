@@ -77,3 +77,6 @@ ul li {
   border-radius: 6px;
   text-align: left;
 }
+.content-hidden {
+  display: none;
+}
