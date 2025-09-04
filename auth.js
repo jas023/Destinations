@@ -37,7 +37,7 @@ if (loginForm) {
       alert("Login failed: " + error.message);
     } else {
       alert("Login successful!");
-      window.location.href = "site.html";
+      window.location.href = "index.html";
     }
   });
 }
