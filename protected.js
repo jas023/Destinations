@@ -40,6 +40,7 @@ async function fetchDestinations() {
 
 
 // --- 3. DATABASE: Handle new destination form ---
+// CORRECTED SECTION
 const destinationForm = document.getElementById('destination-form');
 destinationForm.addEventListener('submit', async (event) => {
   event.preventDefault(); // Prevent the form from reloading the page
@@ -48,16 +49,18 @@ destinationForm.addEventListener('submit', async (event) => {
   const location = document.getElementById('location').value;
   const price = document.getElementById('price').value;
 
-  // Insert the new row into the 'destinations' table
+  // The Supabase insert logic now runs directly when the form is submitted
   const { data, error } = await supabase
     .from('destinations')
-    .insert([{ name, location, price }]);
+    .insert([{ name, location, price }])
+    .select(); // It's good practice to add .select()
 
   if (error) {
     console.error('Error adding destination:', error);
     alert('Failed to add destination: ' + error.message);
   } else {
     // If successful, clear the form and refresh the list of destinations
+    console.log('Successfully added:', data);
     destinationForm.reset();
     fetchDestinations(); 
   }
@@ -88,3 +91,5 @@ if (logoutBtn) {
     window.location.href = "login.html";
   });
 }
+
+// NOTE: The extra code that was here has been removed.
