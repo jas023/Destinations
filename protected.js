@@ -101,3 +101,38 @@ const { data, error } = await supabase
   .from("destinations")
   .select("*")
   .eq("user_id", user.id);  // 👈 filter by logged in user
+
+  // Insert destination (user_id handled by RLS policy automatically)
+async function addDestination(name, location, price) {
+  const { data, error } = await supabase
+    .from("destinations")
+    .insert([{ name, location, price }]); 
+
+  if (error) {
+    console.error("Insert error:", error.message);
+  } else {
+    console.log("Inserted:", data);
+  }
+}
+
+// Fetch destinations (only current user’s data will show because of RLS)
+async function loadDestinations() {
+  const { data, error } = await supabase
+    .from("destinations")
+    .select("*");
+
+  if (error) {
+    console.error("Select error:", error.message);
+  } else {
+    console.log("Destinations for this user:", data);
+    // Example: render to list
+    const list = document.getElementById("destinations-list");
+    list.innerHTML = "";
+    data.forEach(dest => {
+      const li = document.createElement("li");
+      li.textContent = `${dest.name} - ${dest.location} - $${dest.price}`;
+      list.appendChild(li);
+    });
+  }
+}
+
