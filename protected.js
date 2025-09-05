@@ -52,7 +52,11 @@ destinationForm.addEventListener('submit', async (event) => {
   // The Supabase insert logic now runs directly when the form is submitted
   const { data, error } = await supabase
     .from('destinations')
-    .insert([{ name, location, price }])
+    .insert([{ name: document.getElementById("name").value,
+       location: document.getElementById("location").value,
+        price: document.getElementById("price").value,
+      user_id : user.id }
+    ])
     .select(); // It's good practice to add .select()
 
   if (error) {
@@ -93,3 +97,7 @@ if (logoutBtn) {
 }
 
 // NOTE: The extra code that was here has been removed.
+const { data, error } = await supabase
+  .from("destinations")
+  .select("*")
+  .eq("user_id", user.id);  // 👈 filter by logged in user
